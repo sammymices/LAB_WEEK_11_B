@@ -1,0 +1,35 @@
+1. When a user takes a picture, that picture is stored in a path based on the given URI. In which part of the code handles this?
+Jawaban : 
+Kode yang menangani penyimpanan file gambar ke MediaStore ada di fungsi adalah :
+private fun insertToStore(fileInfo: FileInfo, contentUri: Uri, contentValues: ContentValues) {
+    executor.execute {
+        val insertedUri = contentResolver.insert(contentUri, contentValues)
+        insertedUri?.let {
+            val inputStream = contentResolver.openInputStream(fileInfo.uri)
+            val outputStream = contentResolver.openOutputStream(insertedUri)
+            IOUtils.copy(inputStream, outputStream)
+        }
+    }
+}
+Lalu, kode tersebut dijalankan menggunakan baris kode berikut :
+providerFileManager.insertImageToStore(photoInfo)
+
+2.In your FileInfo.kt, there are 5 attributes. On the first attribute, what does the URI refer to? And on the fourth attribute, what does relativePath refer to?
+Jawaban :
+1. Yang dimaksud dengan Uri adalah  alamat sementara yang digunakan oleh kamera Android untuk menulis file hasil foto/video.
+Pada FileHelper.kt, URI dibuat oleh FileProvider melalui kode:
+FileProvider.getUriForFile(...)
+
+2. Yang dimaksud dengan relativePath adalah atribut yang berisi folder tujuan di dalam MediaStore tempat file akan disimpan. 
+relativePath digunakan saat memasukkan file ke MediaStore melalui ContentValues(), sehingga file muncul di Gallery pada folder yang ditentukan.
+
+3. [Bonus] Explain the chronological order from when a user takes a picture until the file is stored in the MediaStore.
+Jawaban :
+Langkah kronologis secara urut
+1. User menekan tombol “Photo” pada UI. Fungsi openImageCapture() dipanggil.
+2. App membuat FileInfo baru yang berisi:file kosong (lokasi awal, URI untuk kamera menulis file, nama file, relativePath, dan mimeType via kode providerFileManager.generatePhotoUri().
+3. Kamera Android dibuka via kode takePictureLauncher.launch(photoInfo.uri).
+4. Saat user selesai memfoto, callback launcher berjalan menggunakan kode providerFileManager.insertImageToStore(photoInfo).
+5. App membuat data untuk MediaStore berupa nama file, path, dan mime type.
+6. App memasukkan (insert) file ke MediaStore, lalu menjalankan proses: membuka inputStream dari URI awal, membuka outputStream dari lokasi MediaStore, dan menyalin file ke tempat final (Gallery). Proses tersebut dijalankan oleh kode IOUtils.copy(inputStream, outputStream)
+7. File foto yang di-capture sukses muncul di gallery Smartphone Android User.
